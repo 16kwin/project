@@ -15,7 +15,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.security.core.Authentication;
 import java.util.Collections;
 import java.util.Map;
 
@@ -85,4 +85,27 @@ public class AuthController {
 
         return ResponseEntity.ok(Map.of("token", jwt));
     }
+    @GetMapping("/user/me")
+public ResponseEntity<?> getMe(Authentication authentication) {
+    if (authentication == null || !authentication.isAuthenticated()) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authenticated");
+    }
+
+    // Получаем имя пользователя из объекта Authentication
+    String username = authentication.getName();
+
+    // Находим пользователя в базе данных по имени пользователя
+    Moment moment = momentService.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found")); // Обрабатываем случай, если пользователь не найден
+
+    // Создаем объект, содержащий только нужные данные профиля
+    Map<String, String> profileData = Map.of(
+            "username", moment.getUsername(),
+            "firstName", moment.getFirstName(),
+            "lastName", moment.getLastName()
+    );
+
+    // Возвращаем данные профиля
+    return ResponseEntity.ok(profileData);
+}
 }
