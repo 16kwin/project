@@ -1,5 +1,7 @@
 package com.example.project.dto;
 
+import com.example.project.model.Role;
+
 public class MomentDTO {
     private Long id;
     private String username;

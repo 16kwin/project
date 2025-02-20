@@ -39,25 +39,26 @@ public class AuthController {
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
     }
-    
+
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody Moment registrationRequest) {
+    public ResponseEntity<?> registerUser(@RequestBody Map<String, Object> registrationRequest) {
         // 1. Проверка, существует ли пользователь с таким именем
-        if (momentService.findByUsername(registrationRequest.getUsername()).isPresent()) {
+        if (momentService.findByUsername((String) registrationRequest.get("username")).isPresent()) {
             return new ResponseEntity<>("Username is already taken!", HttpStatus.BAD_REQUEST);
         }
 
         // 2. Создание нового пользователя
         Moment moment = new Moment();
-        moment.setUsername(registrationRequest.getUsername());
-        moment.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
-        moment.setFirstName(registrationRequest.getFirstName());
-        moment.setLastName(registrationRequest.getLastName());
+        moment.setUsername((String) registrationRequest.get("username"));
+        moment.setPassword(passwordEncoder.encode((String) registrationRequest.get("password")));
+        moment.setFirstName((String) registrationRequest.get("firstName"));
+        moment.setLastName((String) registrationRequest.get("lastName"));
 
-        // 3. Назначение роли USER по умолчанию
-        Role userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RuntimeException("Role USER not found"));
-        moment.setRole(userRole); //  Теперь устанавливаем роль напрямую
+        // 3. Назначение роли
+        String roleName = (String) registrationRequest.get("role"); // Получаем выбранную роль из запроса
+        Role userRole = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role " + roleName + " not found"));
+        moment.setRole(userRole); //  Теперь устанавливаем роль
 
         // 4. Сохранение пользователя в БД
         momentService.save(moment);
@@ -97,7 +98,6 @@ public ResponseEntity<?> getMe(Authentication authentication) {
     // Находим пользователя в базе данных по имени пользователя
     Moment moment = momentService.findByUsername(username)
             .orElseThrow(() -> new RuntimeException("User not found")); // Обрабатываем случай, если пользователь не найден
-
     // Создаем объект, содержащий только нужные данные профиля
     Map<String, String> profileData = Map.of(
             "username", moment.getUsername(),
